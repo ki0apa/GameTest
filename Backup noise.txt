@@ -1,0 +1,129 @@
+var noise1D = function(freq, mapsize){
+    var phase = Math.random() * (2 * Math.PI);
+    var results = [];
+    for(var i = 0; i < mapsize; i++){
+        results[i] = Math.sin(2 * Math.PI * freq * i / mapsize + phase);
+    }
+    return results;
+}
+
+var weighted_sum1D = function(amplitudes, noises, mapsize){
+    var results = [];
+    for(var i = 0; i < mapsize; i++) results[i] = 0.0;
+    for(var i = 0; i < noises.length; i++){
+        for(var j = 0; j < mapsize; j++){
+            results[j] += amplitudes[i] * noises[i][j];
+        }
+    }
+    return results;
+}
+
+var getMap1D = function(mapsize, ampFunction){
+    var frequencies = [];
+    var amplitudes = []
+    for(var i = 1; i < 31; i++) frequencies[i - 1] = i;
+    for(var i = 0; i < frequencies.length; i++){
+        amplitudes[i] = ampFunction(frequencies[i]);
+    }
+
+    var noises = [];
+
+    for(var i = 0; i < frequencies.length; i++){
+        noises[i] = noise1D(frequencies[i], mapsize);
+    }
+
+    return weighted_sum1D(amplitudes, noises, mapsize);
+}
+
+function Perlin1(){
+    this.seeds = [];
+    for(var i = 0; i < 30; i++){
+        this.seeds[i] = Math.random() * 10;
+    }
+
+    this.corp = function(a, b, x){
+        var ft = x * Math.PI;
+        var f = (1 - Math.cos(ft)) * 0.5;
+        return a * (1 - f) + b * f;
+    }
+
+    this.noise1D = function(x, seed){
+        var n = x + seed * 57
+        n = (n<<13) ^ n;
+        return ( 1.0 - ( (x * (x * x * 15731 + 789221) + 1376312589) & 2147483647) / 1073741824.0);     
+    }
+
+    this.smoothNoise1D = function (x, seed){
+        return this.noise1D(x, seed) / 2 + this.noise1D(x - 1, seed) / 4 + this.noise1D(x + 1, seed) / 4;
+    }
+
+    this.corpNoise1D = function(x, seed){
+        var intx = Math.floor(x);
+        var fract = x - intx;
+
+        var v1 = this.smoothNoise1D(intx, seed);
+        var v2 = this.smoothNoise1D(intx + 1, seed);
+
+        return this.corp(v1, v2, fract);
+    }
+
+    this.perlin1D = function(x){
+        var total = 0;
+        var p = 1 / 4;
+        var n = 5;
+
+        for(var i = 0; i < n; i++){
+            var freq = Math.pow(2, i);
+            var amp = Math.pow(p, i);
+
+            total += this.corpNoise1D(x * freq, this.seeds[i]) * amp;
+        }
+
+        return total
+    }
+
+    this.noise2D = function(x, y, seed){
+        var n = (x + seed) + y * 57;
+        n = (n<<13) ^ n;
+        return ((n * 1103515245 + 12345) & 214748364)  / 1073741824.0;    
+    }
+
+    this.smoothNoise2D = function (x, y, seed){
+        var corners = (this.noise2D(x - 1, y - 1, seed) + this.noise2D(x + 1, y - 1, seed) + this.noise2D(x - 1, y + 1, seed) + this.noise2D(x + 1, y + 1, seed)) / 16;
+        var sides = (this.noise2D(x - 1, y, seed) + this.noise2D(x + 1, y, seed) + this.noise2D(x, y - 1, seed) + this.noise2D(x, y + 1, seed)) / 8;
+        var center = this.noise2D(x, y, seed) / 4;
+        return corners + sides + center;
+    }
+
+    this.corpNoise2D = function(x, y, seed){
+        var intx = Math.floor(x);
+        var fractx = x - intx;
+
+        var inty = Math.floor(y);
+        var fracty = y - inty;
+
+        var v1 = this.smoothNoise2D(intx, inty, seed);
+        var v2 = this.smoothNoise2D(intx + 1, inty, seed);
+        var v3 = this.smoothNoise2D(intx, inty + 1, seed);
+        var v4 = this.smoothNoise2D(intx + 1, inty + 1, seed);
+
+        var i1 = this.corp(v1, v2, fractx);
+        var i2 = this.corp(v3, v4, fractx);
+        return this.corp(i1, i2, fracty);
+    }
+
+    this.perlin2D = function(x, y){
+        var total = 0;
+        var p = 2;
+        var n = 5;
+
+        for(var i = 0; i < n; i++){
+            var freq = Math.pow(2, i);
+            var amp = 1 / freq;
+
+            total += this.corpNoise2D(x * freq, y * freq, this.seeds[i]) * amp;
+        }
+
+        return total;
+    }
+}
