@@ -7,7 +7,7 @@ function World(){
 		}else{
 			var n = new TileRegistry(tile.posx, tile.posy);
 			n.addTile(tile);
-			this.registries[this.registries.length - 1] = n;
+			this.registries.push(n);
 		}
 	}
 
@@ -37,12 +37,11 @@ function World(){
 function TileRegistry(x, y){
 	this.tiles = [[]];
 	this.width = 400;
-	this.size = 400;
+	this.height = 400;
 	this.posx = Math.floor(x / 400) * 400;
 	this.posy = Math.floor(y / 400) * 400;
 
 	this.addTile = function(tile){
-		console.log(this.inBounds(100, 100) + " " + this.posx + " " + this.posy);
 		if(this.inBounds(tile.posx, tile.posy)){
 			if(!this.tiles[(tile.posx - this.posx) / 16]){
 				this.tiles[(tile.posx - this.posx) / 16] = [];
